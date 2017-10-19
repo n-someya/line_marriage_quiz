@@ -32,30 +32,45 @@ function handleEvent(event) {
     return Promise.resolve(null);
   }
   const quiz_manager = new QuizManager();
-  if (event.message.text === "ref") {
-    // return pg_client.connect()
-    //   .then(res => {
-    //     pg_client.query('select * from answers;')
-    //       .then(res => {
-    //         const pgquery = { type: 'text', text: JSON.stringify(res) };
-    //         console.log("DB connect ok: ", res);
-    //         return client.replyMessage(event.replyToken, pgquery);
-    //       }).catch(e => {
-    //         const pgquery = { type: 'text', text: e.stack };
-    //         console.log("DB connect ng: ", e.stack);
-    //         return client.replyMessage(event.replyToken, pgquery);
-    //       })
-    // });
-  } else {
-    quiz_manager.get_current_stage()
+  // メッセージが回答候補なら
+  if (quiz_manager.is_answer(event.message.text)) {
+
+    // DBに回答を記載
+    return quiz_manager.answer(event.source.userId, event.message.text)
       .then(message => {
-        return client.replyMessage(event.replyToken, message);
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: message
+        });
       })
       .catch(e => {
         //TODO If error has occured, shoud return sorry message
-        return client.replyMessage(event.replyToken, e.message);
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: e.message
+        });
+      });
+
+  } else {
+    quiz_manager.get_current_stage()
+      .then(message => {
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: message
+        });
+      })
+      .catch(e => {
+        //TODO If error has occured, shoud return sorry message
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: e.message
+        });
       });
   }
+  // ユーザ情報取得
+    // client.getProfile(event.source.userId)
+    //   .then((profile) => {
+
   // const text = event.message.text + "イカ？";
   // create a echoing text message
   // const echo = { type: 'text', text: text };
