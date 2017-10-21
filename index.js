@@ -3,7 +3,12 @@
 const line = require('@line/bot-sdk');
 const express = require('express');
 const QuizManager = require('./QuizManager')
-
+const { Pool } = require('pg');
+const pool = new Pool({
+  max: 20,
+  idleTimeoutMillis: 15000,
+  connectionTimeoutMillis: 2000,
+})
 // create LINE SDK config from env variables
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
@@ -27,7 +32,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 
 app.get('/answer_distribution/:q_number', (req, res) => {
   const q_number = req.params.q_number;
-  const quiz_manager = new QuizManager();
+  const quiz_manager = new QuizManager(pool);
   quiz_manager.get_answer_distribution(q_number)
   .then(result => {
     res.send(result);
@@ -42,7 +47,7 @@ function handleEvent(event) {
     // ignore non-text-message event
     return Promise.resolve(null);
   }
-  const quiz_manager = new QuizManager();
+  const quiz_manager = new QuizManager(pool);
   // メッセージが回答候補なら
   if (quiz_manager.is_answer(event.message.text)) {
 

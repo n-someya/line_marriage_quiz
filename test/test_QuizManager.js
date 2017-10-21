@@ -1,11 +1,14 @@
 const QuizManager = require('../QuizManager.js')
 const { Client } = require('pg');
+const { Pool } = require('pg');
 const fs = require('fs');
 
 var assert = require('assert');
 let chai = require('chai'), should = chai.should();
 
 describe('QuizManager',function(){
+    let quiz_manager = null;
+    let pool = null;
     before(function(done){
         process.env.PGUSER = "postgres"
         process.env.PGHOST = "localhost"
@@ -24,14 +27,25 @@ describe('QuizManager',function(){
             return client.query('delete from corrects')
         }).then(res => {
             client.end();
+            pool = new Pool({
+                max: 20,
+                idleTimeoutMillis: 15000,
+                connectionTimeoutMillis: 1000,
+            });
+            quiz_manager = new QuizManager(pool);
             done();
         }).catch(err=>{
             client.end();
         })
     });
 
+    after(function(done){
+        pool.end().then(res=>{
+            done();
+        })
+    })
+
     it('current_stage_test', function(done){
-        const quiz_manager = new QuizManager();
         quiz_manager.get_current_stage()
             .then(res => {
                 assert.equal("現在は、問題: 0 の解答時間です。", res);
@@ -42,7 +56,6 @@ describe('QuizManager',function(){
     });
 
     it('correctly_answer_first', function(done){
-        const quiz_manager = new QuizManager();
         quiz_manager.answer("test_user", "A")
             .then(res => {
                 assert.equal("解答を「A」で受け付けました。", res);
@@ -55,7 +68,6 @@ describe('QuizManager',function(){
     });
 
     it('correctly_update_answer', function(done){
-        const quiz_manager = new QuizManager();
         quiz_manager.answer("test_user", "A")
             .then(res => {
                 assert.equal("解答を「A」で更新しました。", res);
@@ -68,67 +80,54 @@ describe('QuizManager',function(){
     });
 
     it('a_is_answer', function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("a"));
     });
 
 
     it('A_is_answer', function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("A"));
     });
 
     it("Ａ_is_answer", function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("Ａ"));
     });
 
     it("ａ_is_answer", function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("ａ"));
     });
     
     it('d_is_answer', function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("d"));
     });
     it('D_is_answer', function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("D"));
     });
 
     it("Ｄ_is_answer", function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("Ｄ"));
     });
 
     it("ｄ_is_answer", function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("ｄ"));
     });
 
     it('aa_is_not_answer', function(){
-        const quiz_manager = new QuizManager();
         assert.equal(quiz_manager.is_answer("aa"), false);
     });
 
     it('valid_subscribe_command_1', function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_subscribe_correct_command("jy_correct A"));
     });
  
     it('valid_subscribe_command_2', function(){
-        const quiz_manager = new QuizManager();
         assert(quiz_manager.is_subscribe_correct_command("jy_correct D"));
     });
 
     it('invalid_subscribe_command_1', function(){
-        const quiz_manager = new QuizManager();
         assert.equal(quiz_manager.is_subscribe_correct_command("jy_correct x"), false);
     });
 
     it('correctly_subscribe_correct', function(done){
-        const quiz_manager = new QuizManager();
         quiz_manager.subscribe_correct("jy_correct A")
             .then(res => {
                 assert.equal("問題:0 の解答を、「A」で入力しました。", res);
@@ -140,7 +139,6 @@ describe('QuizManager',function(){
     });
 
     it('invalid_subscribe_correct', function(done){
-        const quiz_manager = new QuizManager();
         quiz_manager.subscribe_correct("jy_correct X")
             .catch(err =>{
                 assert.equal(err.message, "正解入力失敗");
@@ -149,7 +147,6 @@ describe('QuizManager',function(){
     });
 
     it('correctly_update_correct', function(done){
-        const quiz_manager = new QuizManager();
         quiz_manager.update_correct("jy_correct 0 A")
             .then(res => {
                 assert.equal("問題:0 の解答を、「A」で更新しました。", res);
@@ -162,7 +159,6 @@ describe('QuizManager',function(){
 
 
     it('increment current_stage', function(done){
-        const quiz_manager = new QuizManager();
         quiz_manager.get_current_stage()
             .then(res => {
                 assert.equal("現在は、問題: 1 の解答時間です。", res);
@@ -173,7 +169,6 @@ describe('QuizManager',function(){
     });
 
     it('get_answer_distribution', function(done) {
-        const quiz_manager = new QuizManager();
         let client = new Client();
         client.connect()
         .then(res => {

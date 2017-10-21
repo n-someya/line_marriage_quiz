@@ -1,38 +1,38 @@
 'use strict';
-const { Client } = require('pg');
 
 class QuizManager {
 
-    constructor() {
-        this.client = new Client();
+    constructor(pool) {
+        this.pool = pool;
+        console.log(pool);
         this._subscrine_correct_regex = new RegExp('^jy_correct ([A-D])$');
         this._update_correct_regex = new RegExp('^jy_correct ([0-9]+) ([A-D])$');
         this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
     }
 
     get_answer_distribution(question_number) {
-        return this.client.connect()
-        .then(res => {
+        return this.pool.connect().then(client => {
             // 指定された問題の回答分布を取得
-            return this.client.query('select answer, count(*) from answers where stage = $1 group by answer',
-            [question_number]);
-        }).then(res => {
-            this.client.end();
-            const answer_distribution  = res.rows.reduce((obj, row) => {
-                obj[row.answer] = row.count;
-                return obj;
-              }, {
-                  'A': '0',
-                  'B': '0',
-                  'C': '0',
-                  'D': '0'
-              })
-            return Promise.resolve(answer_distribution);
-        }).catch(err => {
-            this.client.end();
-            console.log("get_current_stage", err);
-            return Promise.reject(new Error("get answer distribution error."));
-        });;
+            return client.query('select answer, count(*) from answers where stage = $1 group by answer',
+                [question_number]
+            ).then(res => {
+                client.release();
+                const answer_distribution = res.rows.reduce((obj, row) => {
+                    obj[row.answer] = row.count;
+                    return obj;
+                }, {
+                        'A': '0',
+                        'B': '0',
+                        'C': '0',
+                        'D': '0'
+                    })
+                return Promise.resolve(answer_distribution);
+            }).catch(err => {
+                client.release();
+                console.log("get_current_stage", err);
+                return Promise.reject(new Error("get answer distribution error."));
+            });
+        });
     }
 
     is_answer(text){
@@ -66,65 +66,65 @@ class QuizManager {
 
     answer(user_name, answer_string) {
         const answer = this._cleansing_answer_string(answer_string);
-        return this.client.connect()
-            .then(res => {
+        return this.pool.connect().then(client => {
             //現在の設問番号を取得
-                return this.client.query(this._get_currect_stage_query);
-            }).then(res => {
-                //解答を入力
-                return this.client.query(
-                    'insert into answers (stage, user_id, answer) values($1, $2, $3) returning *',
-                    [
-                        res.rows[0].current_stage,
-                        user_name,
-                        answer
-                    ]).catch(err => {
-                        //再解答の場合の処理
-                        //23505はUnique制約エラー ＝ すでに解答がされているのにINSERTしようとした
-                        //その場合は解答をアップデート
-                        if (err.code == 23505) {
-                            return this.client.query(
-                                'update answers set answer = $3 where stage = $1 and user_id = $2 returning *',
-                                [
-                                    res.rows[0].current_stage,
-                                    user_name,
-                                    answer
-                                ]);
-                        }
-                        throw err;
-                    });
-            }).then(res => {
-                this.client.end();
-                let response_message = "解答を「" + answer + "」で受け付けました。";
-                if (res.command === "UPDATE") {
-                    response_message = "解答を「" + answer + "」で更新しました。"
-                }
-                return Promise.resolve(response_message);
-            }).catch(err => {
-                this.client.end();
-                console.log("get_current_stage", err);
-                return Promise.reject(new Error("申し訳ございません。回答を受け付けることができませんでした。再送してください。"));
- 
-            });
+            return client.query(this._get_currect_stage_query)
+                .then(res => {
+                    //解答を入力
+                    return client.query(
+                        'insert into answers (stage, user_id, answer) values($1, $2, $3) returning *',
+                        [
+                            res.rows[0].current_stage,
+                            user_name,
+                            answer
+                        ]).catch(err => {
+                            //再解答の場合の処理
+                            //23505はUnique制約エラー ＝ すでに解答がされているのにINSERTしようとした
+                            //その場合は解答をアップデート
+                            if (err.code == 23505) {
+                                return client.query(
+                                    'update answers set answer = $3 where stage = $1 and user_id = $2 returning *',
+                                    [
+                                        res.rows[0].current_stage,
+                                        user_name,
+                                        answer
+                                    ]);
+                            }
+                            throw err;
+                        });
+                }).then(res => {
+                    client.release();
+                    let response_message = "解答を「" + answer + "」で受け付けました。";
+                    if (res.command === "UPDATE") {
+                        response_message = "解答を「" + answer + "」で更新しました。"
+                    }
+                    return Promise.resolve(response_message);
+                }).catch(err => {
+                    client.release();
+                    console.log("get_current_stage", err);
+                    return Promise.reject(new Error("申し訳ございません。回答を受け付けることができませんでした。再送してください。"));
+
+                });
+        });
     }
 
 
     get_current_stage() {
         let response = null;
-        return this.client.connect()
-            .then(res => {
-                //現在の設問番号を取得
-                return this.client.query(this._get_currect_stage_query);
-            }).then(res => {
-                response = res;
-                return this.client.end();
-            }).then(res => {
-                return Promise.resolve("現在は、問題: " + response.rows[0].current_stage + " の解答時間です。");
-            }).catch(err => {
-                this.client.end();
-                console.log("get_current_stage", err);
-                return Promise.reject(new Error("申し訳ございません、メンテナンス中です。"));
-            })
+        return this.pool.connect().then(client => {
+            //現在の設問番号を取得
+            return client.query(this._get_currect_stage_query)
+                .then(res => {
+                    response = res;
+                    return client.release();
+                }).then(res => {
+                    return Promise.resolve("現在は、問題: " + response.rows[0].current_stage + " の解答時間です。");
+                }).catch(err => {
+                    client.release();
+                    console.log("get_current_stage", err);
+                    return Promise.reject(new Error("申し訳ございません、メンテナンス中です。"));
+                });
+        });
     }
 
  
@@ -136,31 +136,30 @@ class QuizManager {
     }
 
 
-    subscribe_correct(text){
+    subscribe_correct(text) {
         let correct = null
         let current_stage = null;
-        return this.client.connect()
-            .then(res => {
-                //現在の設問番号を取得
-                return this.client.query(this._get_currect_stage_query);
-            }).then(res => {
-                current_stage = res.rows[0].current_stage;
-                correct = text.match(this._subscrine_correct_regex)[1];
-                //正解を入力
-                return this.client.query(
-                    'insert into corrects (stage, correct) values($1, $2) returning *',
-                    [
-                        res.rows[0].current_stage,
-                        correct
-                    ])
-            }).then(res => {
-                this.client.end();
-                return Promise.resolve("問題:" + current_stage + " の解答を、「" + correct + "」で入力しました。");
-            }).catch(err => {
-                this.client.end();
-                return Promise.reject(new Error("正解入力失敗"));
- 
-            });
+        return this.pool.connect().then(client => {
+            //現在の設問番号を取得
+            return client.query(this._get_currect_stage_query)
+                .then(res => {
+                    current_stage = res.rows[0].current_stage;
+                    correct = text.match(this._subscrine_correct_regex)[1];
+                    //正解を入力
+                    return client.query(
+                        'insert into corrects (stage, correct) values($1, $2) returning *',
+                        [
+                            res.rows[0].current_stage,
+                            correct
+                        ])
+                }).then(res => {
+                    client.release();
+                    return Promise.resolve("問題:" + current_stage + " の解答を、「" + correct + "」で入力しました。");
+                }).catch(err => {
+                    client.release();
+                    return Promise.reject(new Error("正解入力失敗"));
+                });
+        });
     }
 
 
@@ -172,28 +171,27 @@ class QuizManager {
     }
 
 
-    update_correct(text){
+    update_correct(text) {
         let correct = null
         let current_stage = null;
-        return this.client.connect()
-            .then(res => {
-                current_stage = text.match(this._update_correct_regex)[1];
-                correct = text.match(this._update_correct_regex)[2];
-                //正解を入力
-                return this.client.query(
-                    'update corrects set correct = $2 where stage =  $1 returning *',
-                    [
-                        current_stage,
-                        correct
-                    ])
-            }).then(res => {
-                this.client.end();
-                return Promise.resolve("問題:" + current_stage + " の解答を、「" + correct + "」で更新しました。");
-            }).catch(err => {
-                this.client.end();
-                return Promise.reject(new Error("正解更新失敗"));
- 
-            });
+        return this.pool.connect().then(client => {
+            current_stage = text.match(this._update_correct_regex)[1];
+            correct = text.match(this._update_correct_regex)[2];
+            //正解を入力
+            return client.query(
+                'update corrects set correct = $2 where stage =  $1 returning *',
+                [
+                    current_stage,
+                    correct
+                ])
+                .then(res => {
+                    client.release();
+                    return Promise.resolve("問題:" + current_stage + " の解答を、「" + correct + "」で更新しました。");
+                }).catch(err => {
+                    client.release();
+                    return Promise.reject(new Error("正解更新失敗"));
+                });
+        });
     }
 }
 
