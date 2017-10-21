@@ -25,6 +25,17 @@ app.post('/webhook', line.middleware(config), (req, res) => {
     .then((result) => res.json(result));
 });
 
+app.get('/answer_distribution/:q_number', (req, res) => {
+  const q_number = req.params.q_number;
+  const quiz_manager = new QuizManager();
+  quiz_manager.get_answer_distribution(q_number)
+  .then(result => {
+    res.send(result);
+  }).catch(err => {
+    res.send(err);
+  });
+});
+
 // event handler
 function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
