@@ -8,6 +8,13 @@ class QuizManager {
         this._subscrine_correct_regex = new RegExp('^jy_correct ([A-D])$');
         this._update_correct_regex = new RegExp('^jy_correct ([0-9]+) ([A-D])$');
         this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
+        this._get_currect_ranking_regex = new RegExp('^jy_ranking$');
+        this._get_currect_ranking_query = 
+            "SELECT user_id, display_name, count(*) as cnt , rank() over ( order by count(*) desc ) " +
+            "FROM answers LEFT JOIN corrects USING (stage) LEFT JOIN users ON answers.user_id = users.id " +
+            "WHERE answer = correct " +
+            "GROUP BY user_id, display_name " +
+            "ORDER BY cnt desc;"
     }
 
     get_answer_distribution(question_number) {
@@ -193,6 +200,35 @@ class QuizManager {
                 });
         });
     }
+
+
+    is_get_current_ranking_command(text){
+        if ( text.match(this._get_currect_ranking_regex) ){
+            return true;
+        }
+        return false;
+    }
+
+
+    get_current_ranking() {
+        let response = null;
+        return this.pool.connect().then(client => {
+            //現在の設問番号を取得
+            return client.query(this._get_currect_ranking_query)
+                .then(res => {
+                    response = res;
+                    return client.release();
+                }).then(res => {
+                    return Promise.resolve(response.rows);
+                }).catch(err => {
+                    client.release();
+                    console.log("get_current_stage", err);
+                    return Promise.reject(new Error("申し訳ございません、メンテナンス中です。"));
+                });
+        });
+    }
+
+
 }
 
 module.exports = QuizManager;

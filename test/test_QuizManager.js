@@ -185,4 +185,25 @@ describe('QuizManager',function(){
             done(err);
         });
     });
+
+    it('valid_get_current_ranking_comand', function(){
+        assert(quiz_manager.is_get_current_ranking_command("jy_ranking"));
+    });
+
+    it('invalid_get_current_ranking_comand', function(){
+        assert.equal(quiz_manager.is_get_current_ranking_command("jyranking"), false);
+    });
+
+    it('get current_ranking', function(done){
+        quiz_manager.get_current_ranking()
+            .then(res => {
+                //TODO
+                console.log(res)
+                assert(true);
+                done();
+            }).catch(err => {
+                done(err);
+            });
+    });
+
 });
