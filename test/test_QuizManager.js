@@ -198,8 +198,8 @@ describe('QuizManager',function(){
         quiz_manager.get_current_ranking()
             .then(res => {
                 //TODO
+                chai.assert.typeOf(res, 'string');
                 console.log(res)
-                assert(true);
                 done();
             }).catch(err => {
                 done(err);

@@ -219,7 +219,7 @@ class QuizManager {
                     response = res;
                     return client.release();
                 }).then(res => {
-                    return Promise.resolve(response.rows);
+                    return Promise.resolve(JSON.stringify(response.rows));
                 }).catch(err => {
                     client.release();
                     console.log("get_current_stage", err);
