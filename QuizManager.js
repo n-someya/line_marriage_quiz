@@ -5,6 +5,8 @@ class QuizManager {
 
     constructor() {
         this.client = new Client();
+        this._subscrine_correct_regex = new RegExp('^juta_yuki_correct ([A-D])$');
+        this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
     }
 
 
@@ -42,7 +44,7 @@ class QuizManager {
         return this.client.connect()
             .then(res => {
             //現在の設問番号を取得
-                return this.client.query('select coalesce((select max(stage)  from corrects), 0) as current_stage;')
+                return this.client.query(this._get_currect_stage_query);
             }).then(res => {
                 //解答を入力
                 return this.client.query(
@@ -87,7 +89,7 @@ class QuizManager {
         return this.client.connect()
             .then(res => {
                 //現在の設問番号を取得
-                return this.client.query('select coalesce((select max(stage)  from corrects), 0) as current_stage;')
+                return this.client.query(this._get_currect_stage_query);
             }).then(res => {
                 response = res;
                 return this.client.end();
@@ -99,6 +101,42 @@ class QuizManager {
                 return Promise.reject(new Error("申し訳ございません、メンテナンス中です。"));
             })
     }
+
+ 
+    is_subscribe_correct_command(text){
+        if ( text.match(this._subscrine_correct_regex) ){
+            return true;
+        }
+        return false;
+    }
+
+
+    subscribe_correct(text){
+        let correct = null
+        let current_stage = null;
+        return this.client.connect()
+            .then(res => {
+                //現在の設問番号を取得
+                return this.client.query(this._get_currect_stage_query);
+            }).then(res => {
+                current_stage = res.rows[0].current_stage;
+                correct = text.match(this._subscrine_correct_regex)[1];
+                //正解を入力
+                return this.client.query(
+                    'insert into corrects (stage, correct) values($1, $2) returning *',
+                    [
+                        res.rows[0].current_stage,
+                        correct
+                    ])
+            }).then(res => {
+                this.client.end();
+                return Promise.resolve("問題:" + current_stage + " の解答を、「" + correct + "」で入力しました。");
+            }).catch(err => {
+                this.client.end();
+                return Promise.reject(new Error("正解入力失敗"));
+ 
+            });
+    }   
 }
 
 module.exports = QuizManager;

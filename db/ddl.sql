@@ -8,10 +8,10 @@ CREATE TABLE answers (
 
 CREATE TABLE corrects (
     stage integer PRIMARY KEY,
-    correct character(1)
+    correct character(1) NOT NULL
 );
 
 CREATE TABLE users (
     id text PRIMARY KEY,
     display_name text
-)
+);

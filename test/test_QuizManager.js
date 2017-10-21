@@ -106,5 +106,52 @@ describe('QuizManager',function(){
         assert.equal(quiz_manager.is_answer("aa"), false);
     });
 
+    it('valid_subscribe_command_1', function(){
+        const quiz_manager = new QuizManager();
+        assert(quiz_manager.is_subscribe_correct_command("juta_yuki_correct A"));
+    });
+ 
+    it('valid_subscribe_command_2', function(){
+        const quiz_manager = new QuizManager();
+        assert(quiz_manager.is_subscribe_correct_command("juta_yuki_correct D"));
+    });
+
+    it('invalid_subscribe_command_1', function(){
+        const quiz_manager = new QuizManager();
+        assert.equal(quiz_manager.is_subscribe_correct_command("juta_yuki_correct x"), false);
+    });
+
+    it('correctly_subscribe_correct', function(done){
+        const quiz_manager = new QuizManager();
+        quiz_manager.subscribe_correct("juta_yuki_correct A")
+            .then(res => {
+                assert.equal("問題:0 の解答を、「A」で入力しました。", res);
+                done();
+            })
+            .catch(err =>{
+                done(err);
+            });
+    });
+
+    it('invalid_subscribe_correct', function(done){
+        const quiz_manager = new QuizManager();
+        quiz_manager.subscribe_correct("juta_yuki_correct X")
+            .catch(err =>{
+                assert.equal(err.message, "正解入力失敗");
+                done();
+            });
+    });
+
+
+    it('increment current_stage', function(done){
+        const quiz_manager = new QuizManager();
+        quiz_manager.get_current_stage()
+            .then(res => {
+                assert.equal("現在は、問題: 1 の解答時間です。", res);
+                done();
+            }).catch(err => {
+                done(err);
+            });
+    });
 
 });
