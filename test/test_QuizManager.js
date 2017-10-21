@@ -1,5 +1,6 @@
 const QuizManager = require('../QuizManager.js')
 const { Client } = require('pg');
+const fs = require('fs');
 
 var assert = require('assert');
 let chai = require('chai'), should = chai.should();
@@ -11,8 +12,13 @@ describe('QuizManager',function(){
         process.env.PGPORT = 5432
         process.env.PGDATABASE = "postgres"
         let client = new Client();
+        let sql = fs.readFileSync('./db/ddl.sql').toString();
         client.connect()
         .then(res => {
+            return client.query(sql)
+            .catch(e=>{
+            })
+        }).then(res =>{
             return client.query('delete from answers')
         }).then(res => {
             return client.query('delete from corrects')
@@ -108,22 +114,22 @@ describe('QuizManager',function(){
 
     it('valid_subscribe_command_1', function(){
         const quiz_manager = new QuizManager();
-        assert(quiz_manager.is_subscribe_correct_command("juta_yuki_correct A"));
+        assert(quiz_manager.is_subscribe_correct_command("jy_correct A"));
     });
  
     it('valid_subscribe_command_2', function(){
         const quiz_manager = new QuizManager();
-        assert(quiz_manager.is_subscribe_correct_command("juta_yuki_correct D"));
+        assert(quiz_manager.is_subscribe_correct_command("jy_correct D"));
     });
 
     it('invalid_subscribe_command_1', function(){
         const quiz_manager = new QuizManager();
-        assert.equal(quiz_manager.is_subscribe_correct_command("juta_yuki_correct x"), false);
+        assert.equal(quiz_manager.is_subscribe_correct_command("jy_correct x"), false);
     });
 
     it('correctly_subscribe_correct', function(done){
         const quiz_manager = new QuizManager();
-        quiz_manager.subscribe_correct("juta_yuki_correct A")
+        quiz_manager.subscribe_correct("jy_correct A")
             .then(res => {
                 assert.equal("問題:0 の解答を、「A」で入力しました。", res);
                 done();
@@ -135,10 +141,22 @@ describe('QuizManager',function(){
 
     it('invalid_subscribe_correct', function(done){
         const quiz_manager = new QuizManager();
-        quiz_manager.subscribe_correct("juta_yuki_correct X")
+        quiz_manager.subscribe_correct("jy_correct X")
             .catch(err =>{
                 assert.equal(err.message, "正解入力失敗");
                 done();
+            });
+    });
+
+    it('correctly_update_correct', function(done){
+        const quiz_manager = new QuizManager();
+        quiz_manager.update_correct("jy_correct 0 A")
+            .then(res => {
+                assert.equal("問題:0 の解答を、「A」で更新しました。", res);
+                done();
+            })
+            .catch(err =>{
+                done(err);
             });
     });
 

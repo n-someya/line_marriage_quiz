@@ -67,6 +67,22 @@ function handleEvent(event) {
           text: e.message
         });
       });
+  }else if ( quiz_manager.is_update_correct_command(event.message.text) ) {
+    // 【管理系】DBに正解を記載
+    return quiz_manager.update_correct(event.message.text)
+      .then(message => {
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: message
+        });
+      })
+      .catch(e => {
+        //TODO If error has occured, shoud return sorry message
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: e.message
+        });
+      });
   }else {
     quiz_manager.get_current_stage()
       .then(message => {
