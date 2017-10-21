@@ -28,7 +28,7 @@ describe('QuizManager',function(){
         const quiz_manager = new QuizManager();
         quiz_manager.get_current_stage()
             .then(res => {
-                assert.equal("現在の問題番号は 0 です。", res);
+                assert.equal("現在は、問題: 0 の解答時間です。", res);
                 done();
             }).catch(err => {
                 done(err);
@@ -39,7 +39,7 @@ describe('QuizManager',function(){
         const quiz_manager = new QuizManager();
         quiz_manager.answer("test_user", "A")
             .then(res => {
-                assert.equal("解答を受け付けました。", res);
+                assert.equal("解答を「A」で受け付けました。", res);
                 done();
             })
             .catch(err =>{
@@ -52,7 +52,7 @@ describe('QuizManager',function(){
         const quiz_manager = new QuizManager();
         quiz_manager.answer("test_user", "A")
             .then(res => {
-                assert.equal("解答を更新しました。", res);
+                assert.equal("解答を「A」で更新しました。", res);
                 done();
             })
             .catch(err =>{
@@ -76,6 +76,11 @@ describe('QuizManager',function(){
         const quiz_manager = new QuizManager();
         assert(quiz_manager.is_answer("Ａ"));
     });
+
+    it("ａ_is_answer", function(){
+        const quiz_manager = new QuizManager();
+        assert(quiz_manager.is_answer("ａ"));
+    });
     
     it('d_is_answer', function(){
         const quiz_manager = new QuizManager();
@@ -86,8 +91,20 @@ describe('QuizManager',function(){
         assert(quiz_manager.is_answer("D"));
     });
 
-    it("_is_answer", function(){
+    it("Ｄ_is_answer", function(){
         const quiz_manager = new QuizManager();
-        assert(quiz_manager.is_answer("Ａ"));
+        assert(quiz_manager.is_answer("Ｄ"));
     });
+
+    it("ｄ_is_answer", function(){
+        const quiz_manager = new QuizManager();
+        assert(quiz_manager.is_answer("ｄ"));
+    });
+
+    it('aa_is_not_answer', function(){
+        const quiz_manager = new QuizManager();
+        assert.equal(quiz_manager.is_answer("aa"), false);
+    });
+
+
 });

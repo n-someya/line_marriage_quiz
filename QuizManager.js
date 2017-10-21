@@ -10,14 +10,35 @@ class QuizManager {
 
     is_answer(text){
         // 半角大文字小文字、全角大文字小文字(\uff21が全角A)のa-dを許可
-        let re = new RegExp('[a-d|A-D|\uff21-\uff24|\uff41-\uff44j]');
+        let re = new RegExp('^[a-d|A-D|\uff21-\uff24|\uff41-\uff44]$');
         if ( text.match(re) ){
             return true;
         }
         return false;
     }
 
-    answer(user_name, answer) {
+    _cleansing_answer_string(answer){
+        let re_A = new RegExp('^[a|A|\uff21|\uff41]$');
+        let re_B = new RegExp('^[b|B|\uff22|\uff42]$');
+        let re_C = new RegExp('^[c|C|\uff23|\uff43]$');
+        let re_D = new RegExp('^[d|D|\uff24|\uff44]$');
+        if ( answer.match(re_A) ){
+            return "A";
+        }
+        else if ( answer.match(re_B) ){
+            return "B";
+        }
+        else if ( answer.match(re_C) ){
+            return "C";
+        }
+        else if ( answer.match(re_D) ){
+            return "D";
+        }
+        throw new Error("Invalid answer string");
+    }
+
+    answer(user_name, answer_string) {
+        const answer = this._cleansing_answer_string(answer_string);
         return this.client.connect()
             .then(res => {
             //現在の設問番号を取得
@@ -47,9 +68,9 @@ class QuizManager {
                     });
             }).then(res => {
                 this.client.end();
-                let response_message = "解答を受け付けました。";
+                let response_message = "解答を「" + answer + "」で受け付けました。";
                 if (res.command === "UPDATE") {
-                    response_message = "解答を更新しました。"
+                    response_message = "解答を「" + answer + "」で更新しました。"
                 }
                 return Promise.resolve(response_message);
             }).catch(err => {
@@ -71,7 +92,7 @@ class QuizManager {
                 response = res;
                 return this.client.end();
             }).then(res => {
-                return Promise.resolve("現在の問題番号は " + response.rows[0].current_stage + " です。");
+                return Promise.resolve("現在は、問題: " + response.rows[0].current_stage + " の解答時間です。");
             }).catch(err => {
                 this.client.end();
                 console.log("get_current_stage", err);
