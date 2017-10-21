@@ -10,6 +10,30 @@ class QuizManager {
         this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
     }
 
+    get_answer_distribution(question_number) {
+        return this.client.connect()
+        .then(res => {
+            // 指定された問題の回答分布を取得
+            return this.client.query('select answer, count(*) from answers where stage = $1 group by answer',
+            [question_number]);
+        }).then(res => {
+            this.client.end();
+            const answer_distribution  = res.rows.reduce((obj, row) => {
+                obj[row.answer] = row.count;
+                return obj;
+              }, {
+                  'A': '0',
+                  'B': '0',
+                  'C': '0',
+                  'D': '0'
+              })
+            return Promise.resolve(answer_distribution);
+        }).catch(err => {
+            this.client.end();
+            console.log("get_current_stage", err);
+            return Promise.reject(new Error("get answer distribution error."));
+        });;
+    }
 
     is_answer(text){
         // 半角大文字小文字、全角大文字小文字(\uff21が全角A)のa-dを許可

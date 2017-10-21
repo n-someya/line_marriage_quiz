@@ -172,4 +172,22 @@ describe('QuizManager',function(){
             });
     });
 
+    it('get_answer_distribution', function(done) {
+        const quiz_manager = new QuizManager();
+        let client = new Client();
+        client.connect()
+        .then(res => {
+            return client.query("insert into answers (stage, user_id, answer) values (1, 'user1', 'A'), (1, 'user2', 'A'), (1, 'user3', 'B'), (2, 'user4', 'D')");
+        }).then(res => {
+            client.end();
+            return quiz_manager.get_answer_distribution(1);
+        }).then(res => {
+            const correct_obj = { A: '2', B: '1', C: '0', D: '0' };
+            assert.deepEqual(correct_obj, res);
+            done();
+        }).catch(err => {
+            client.end();
+            done(err);
+        });
+    });
 });
