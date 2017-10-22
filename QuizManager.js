@@ -2,7 +2,7 @@
 
 class QuizManager {
 
-    constructor(pool, getProfileFunc) {
+    constructor(pool, line_client) {
         this.pool = pool;
         console.log(pool);
         // RegExp
@@ -21,7 +21,7 @@ class QuizManager {
             "ORDER BY cnt desc;";
         
         // Set getProfile function
-        this.getProfile = getProfileFunc;
+        this.lineclient = line_client;
     }
 
     get_answer_distribution(question_number) {
@@ -88,7 +88,7 @@ class QuizManager {
                 //ユーザーテーブルの表示名が存在しなかった場合は、
                 //解答処理とは非同期に取得APIを実行し、表示名をユーザーテーブルに格納する。
                 if ( res.rows.length == 0){
-                    this.getProfile(user_id)
+                    this.lineclient.getProfile(user_id)
                     .then(profile=>{
                         client.query('INSERT INTO users VALUES($1, $2)',[
                             user_id,

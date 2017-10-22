@@ -6,10 +6,12 @@ const fs = require('fs');
 var assert = require('assert');
 let chai = require('chai'), should = chai.should();
 
-let dummyGetProfile = function(userId) {
-    return new Promise((resolve, reject) => {
-        resolve({displayName: "Dummy User Name " + userId});
-      });
+class DummyLineClient {
+    getProfile(userId) {
+        return new Promise((resolve, reject) => {
+            resolve({ displayName: "Dummy User Name " + userId });
+        });
+    }
 };
 
 describe('QuizManager',function(){
@@ -23,6 +25,7 @@ describe('QuizManager',function(){
         process.env.PGDATABASE = "postgres"
         let client = new Client();
         let sql = fs.readFileSync('./db/ddl.sql').toString();
+        let dummy_line_client = new DummyLineClient();
         client.connect()
         .then(res => {
             return client.query(sql)
@@ -41,7 +44,7 @@ describe('QuizManager',function(){
                 idleTimeoutMillis: 15000,
                 connectionTimeoutMillis: 1000,
             });
-            quiz_manager = new QuizManager(pool, dummyGetProfile);
+            quiz_manager = new QuizManager(pool, dummy_line_client);
             done();
         }).catch(err=>{
             client.end();
