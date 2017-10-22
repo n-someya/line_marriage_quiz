@@ -41,6 +41,17 @@ app.get('/answer_distribution/:q_number', (req, res) => {
   });
 });
 
+app.get('/ranking', (req, res) => {
+  const quiz_manager = new QuizManager(pool, client);
+  quiz_manager.get_current_ranking()
+  .then(result => {
+    res.send(result);
+  }).catch(err => {
+    res.send(err);
+  });
+});
+
+
 // event handler
 function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
@@ -102,10 +113,14 @@ function handleEvent(event) {
   }else if ( quiz_manager.is_get_current_ranking_command(event.message.text) ) {
     // 【管理系】現在のランキングを表示
     return quiz_manager.get_current_ranking()
-      .then(message => {
+      .then(response => {
+        let response_message = "";
+        for (let i=0; i<response.length; i++){
+          response_message += response[i].rank + "位 | " + response[i].display_name + "|" + response[i].cnt + "問正解 \n"
+        }
         return client.replyMessage(event.replyToken, {
           type: 'text',
-          text: message
+          text: response_message
         });
       })
       .catch(e => {

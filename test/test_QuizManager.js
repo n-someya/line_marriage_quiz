@@ -150,6 +150,30 @@ describe('QuizManager',function(){
             });
     });
 
+    it('correctly_answer_1st_question', function(done){
+        quiz_manager.answer(test_user_id, "D")
+            .then(res => {
+                assert.equal("解答を「D」で受け付けました。", res);
+                done();
+            })
+            .catch(err =>{
+                console.log("err", err.code);
+                done(err);
+            });
+    });
+
+
+    it('correctly_subscribe_correct_1', function(done){
+        quiz_manager.subscribe_correct("jy_correct D")
+            .then(res => {
+                assert.equal("問題:1 の解答を、「D」で入力しました。", res);
+                done();
+            })
+            .catch(err =>{
+                done(err);
+            });
+    });
+
     it('invalid_subscribe_correct', function(done){
         quiz_manager.subscribe_correct("jy_correct X")
             .catch(err =>{
@@ -173,7 +197,7 @@ describe('QuizManager',function(){
     it('increment current_stage', function(done){
         quiz_manager.get_current_stage()
             .then(res => {
-                assert.equal("現在は、問題: 1 の解答時間です。", res);
+                assert.equal("現在は、問題: 2 の解答時間です。", res);
                 done();
             }).catch(err => {
                 done(err);
@@ -184,10 +208,10 @@ describe('QuizManager',function(){
         let client = new Client();
         client.connect()
         .then(res => {
-            return client.query("insert into answers (stage, user_id, answer) values (1, 'user1', 'A'), (1, 'user2', 'A'), (1, 'user3', 'B'), (2, 'user4', 'D')");
+            return client.query("insert into answers (stage, user_id, answer) values (2, 'user1', 'A'), (2, 'user2', 'A'), (2, 'user3', 'B'), (3, 'user4', 'D')");
         }).then(res => {
             client.end();
-            return quiz_manager.get_answer_distribution(1);
+            return quiz_manager.get_answer_distribution(2);
         }).then(res => {
             const correct_obj = { A: '2', B: '1', C: '0', D: '0' };
             assert.deepEqual(correct_obj, res);
@@ -209,9 +233,9 @@ describe('QuizManager',function(){
     it('get current_ranking', function(done){
         quiz_manager.get_current_ranking()
             .then(res => {
-                //TODO
-                chai.assert.typeOf(res, 'string');
-                console.log(res)
+                chai.assert.property(res[0], 'display_name');
+                chai.assert.property(res[0], 'rank');
+                chai.assert.property(res[0], 'cnt');
                 done();
             }).catch(err => {
                 done(err);

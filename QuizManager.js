@@ -4,7 +4,6 @@ class QuizManager {
 
     constructor(pool, line_client) {
         this.pool = pool;
-        console.log(pool);
         // RegExp
         this._subscrine_correct_regex = new RegExp('^jy_correct ([A-D])$');
         this._update_correct_regex = new RegExp('^jy_correct ([0-9]+) ([A-D])$');
@@ -14,9 +13,9 @@ class QuizManager {
         // SQL Queries
         this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
         this._get_currect_ranking_query = 
-            "SELECT user_id, display_name, count(*) as cnt , rank() over ( order by count(*) desc ) " +
+            "SELECT rank() over ( order by count(*) desc ), display_name, count(*) as cnt " +
             "FROM answers LEFT JOIN corrects USING (stage) LEFT JOIN users ON answers.user_id = users.id " +
-            "WHERE answer = correct " +
+            "WHERE answer = correct AND stage != 0 " +
             "GROUP BY user_id, display_name " +
             "ORDER BY cnt desc;";
         
@@ -244,7 +243,7 @@ class QuizManager {
                     response = res;
                     return client.release();
                 }).then(res => {
-                    return Promise.resolve(JSON.stringify(response.rows));
+                    return Promise.resolve(response.rows);
                 }).catch(err => {
                     client.release();
                     console.log("get_current_stage", err);
@@ -270,7 +269,7 @@ class QuizManager {
             return client.query(this._get_currect_ranking_query)
                 .then(res => {
                     current_stage = res.rows[0].current_stage;
-                    return client.query('SELECT count(*) FROM answers LEFT JOIN corrects USING (stage) WHERE answer = correct AND user_id = $1 ',
+                    return client.query('SELECT count(*) FROM answers LEFT JOIN corrects USING (stage) WHERE answer = correct AND user_id = $1 AND stage != 0',
                         [
                             user_id
                         ])
