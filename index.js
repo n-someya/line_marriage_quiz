@@ -32,7 +32,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 
 app.get('/answer_distribution/:q_number', (req, res) => {
   const q_number = req.params.q_number;
-  const quiz_manager = new QuizManager(pool);
+  const quiz_manager = new QuizManager(pool, client.getProfile);
   quiz_manager.get_answer_distribution(q_number)
   .then(result => {
     res.send(result);
@@ -47,7 +47,7 @@ function handleEvent(event) {
     // ignore non-text-message event
     return Promise.resolve(null);
   }
-  const quiz_manager = new QuizManager(pool);
+  const quiz_manager = new QuizManager(pool, client.getProfile);
   // メッセージが回答候補なら
   if (quiz_manager.is_answer(event.message.text)) {
 

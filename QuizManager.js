@@ -2,7 +2,7 @@
 
 class QuizManager {
 
-    constructor(pool) {
+    constructor(pool, getProfileFunc) {
         this.pool = pool;
         console.log(pool);
         // RegExp
@@ -18,7 +18,10 @@ class QuizManager {
             "FROM answers LEFT JOIN corrects USING (stage) LEFT JOIN users ON answers.user_id = users.id " +
             "WHERE answer = correct " +
             "GROUP BY user_id, display_name " +
-            "ORDER BY cnt desc;"
+            "ORDER BY cnt desc;";
+        
+        // Set getProfile function
+        this.getProfile = getProfileFunc;
     }
 
     get_answer_distribution(question_number) {
@@ -78,44 +81,62 @@ class QuizManager {
     answer(user_id, answer_string) {
         const answer = this._cleansing_answer_string(answer_string);
         return this.pool.connect().then(client => {
-            //現在の設問番号を取得
-            return client.query(this._get_currect_stage_query)
-                .then(res => {
-                    //解答を入力
-                    return client.query(
-                        'insert into answers (stage, user_id, answer) values($1, $2, $3) returning *',
-                        [
-                            res.rows[0].current_stage,
+            //ユーザーテーブルの表示名が存在するか確認
+            return client.query('SELECT * FROM users WHERE id = $1', [
+                user_id
+            ]).then(res => {
+                //ユーザーテーブルの表示名が存在しなかった場合は、
+                //解答処理とは非同期に取得APIを実行し、表示名をユーザーテーブルに格納する。
+                if ( res.rows.length == 0){
+                    this.getProfile(user_id)
+                    .then(profile=>{
+                        client.query('INSERT INTO users VALUES($1, $2)',[
                             user_id,
-                            answer
-                        ]).catch(err => {
-                            //再解答の場合の処理
-                            //23505はUnique制約エラー ＝ すでに解答がされているのにINSERTしようとした
-                            //その場合は解答をアップデート
-                            if (err.code == 23505) {
-                                return client.query(
-                                    'update answers set answer = $3 where stage = $1 and user_id = $2 returning *',
-                                    [
-                                        res.rows[0].current_stage,
-                                        user_id,
-                                        answer
-                                    ]);
-                            }
-                            throw err;
-                        });
-                }).then(res => {
-                    client.release();
-                    let response_message = "解答を「" + answer + "」で受け付けました。";
-                    if (res.command === "UPDATE") {
-                        response_message = "解答を「" + answer + "」で更新しました。"
-                    }
-                    return Promise.resolve(response_message);
-                }).catch(err => {
-                    client.release();
-                    console.log("get_current_stage", err);
-                    return Promise.reject(new Error("申し訳ございません。回答を受け付けることができませんでした。再送してください。"));
+                            profile.displayName
+                        ]);
+                    }).catch(e=>{
+                        //getProfileに失敗しても何もしない。
+                        console.log(e);
+                    })
+                }
+                //現在の設問番号を取得
+                return client.query(this._get_currect_stage_query)
+            }).then(res => {
+                //解答を入力
+                return client.query(
+                    'insert into answers (stage, user_id, answer) values($1, $2, $3) returning *',
+                    [
+                        res.rows[0].current_stage,
+                        user_id,
+                        answer
+                    ]).catch(err => {
+                        //再解答の場合の処理
+                        //23505はUnique制約エラー ＝ すでに解答がされているのにINSERTしようとした
+                        //その場合は解答をアップデート
+                        if (err.code == 23505) {
+                            return client.query(
+                                'update answers set answer = $3 where stage = $1 and user_id = $2 returning *',
+                                [
+                                    res.rows[0].current_stage,
+                                    user_id,
+                                    answer
+                                ]);
+                        }
+                        throw err;
+                    });
+            }).then(res => {
+                client.release();
+                let response_message = "解答を「" + answer + "」で受け付けました。";
+                if (res.command === "UPDATE") {
+                    response_message = "解答を「" + answer + "」で更新しました。"
+                }
+                return Promise.resolve(response_message);
+            }).catch(err => {
+                client.release();
+                console.log("get_current_stage", err);
+                return Promise.reject(new Error("申し訳ございません。回答を受け付けることができませんでした。再送してください。"));
 
-                });
+            });
         });
     }
 
@@ -138,9 +159,9 @@ class QuizManager {
         });
     }
 
- 
-    is_subscribe_correct_command(text){
-        if ( text.match(this._subscrine_correct_regex) ){
+
+    is_subscribe_correct_command(text) {
+        if (text.match(this._subscrine_correct_regex)) {
             return true;
         }
         return false;
@@ -174,8 +195,8 @@ class QuizManager {
     }
 
 
-    is_update_correct_command(text){
-        if ( text.match(this._update_correct_regex) ){
+    is_update_correct_command(text) {
+        if (text.match(this._update_correct_regex)) {
             return true;
         }
         return false;
@@ -206,8 +227,8 @@ class QuizManager {
     }
 
 
-    is_get_current_ranking_command(text){
-        if ( text.match(this._get_currect_ranking_regex) ){
+    is_get_current_ranking_command(text) {
+        if (text.match(this._get_currect_ranking_regex)) {
             return true;
         }
         return false;
@@ -232,20 +253,20 @@ class QuizManager {
         });
     }
 
-    
-    is_get_current_number_of_corrects_command(text){
-        if ( text.match(this._get_currect_number_of_corrects_regex) ){
+
+    is_get_current_number_of_corrects_command(text) {
+        if (text.match(this._get_currect_number_of_corrects_regex)) {
             return true;
         }
         return false;
     }
-    
+
 
     get_current_number_of_corrects(user_id) {
         return this.pool.connect().then(client => {
             //現在の設問番号を取得
             let current_stage = null;
-            let response = null ;
+            let response = null;
             return client.query(this._get_currect_ranking_query)
                 .then(res => {
                     current_stage = res.rows[0].current_stage;
@@ -270,3 +291,4 @@ class QuizManager {
 }
 
 module.exports = QuizManager;
+                

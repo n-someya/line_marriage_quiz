@@ -6,6 +6,12 @@ const fs = require('fs');
 var assert = require('assert');
 let chai = require('chai'), should = chai.should();
 
+let dummyGetProfile = function(userId) {
+    return new Promise((resolve, reject) => {
+        resolve({displayName: "Dummy User Name " + userId});
+      });
+};
+
 describe('QuizManager',function(){
     let quiz_manager = null;
     let pool = null;
@@ -27,13 +33,15 @@ describe('QuizManager',function(){
         }).then(res => {
             return client.query('delete from corrects')
         }).then(res => {
+            return client.query('delete from users')
+        }).then(res => {
             client.end();
             pool = new Pool({
                 max: 20,
                 idleTimeoutMillis: 15000,
                 connectionTimeoutMillis: 1000,
             });
-            quiz_manager = new QuizManager(pool);
+            quiz_manager = new QuizManager(pool, dummyGetProfile);
             done();
         }).catch(err=>{
             client.end();
