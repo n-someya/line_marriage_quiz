@@ -5,10 +5,14 @@ class QuizManager {
     constructor(pool) {
         this.pool = pool;
         console.log(pool);
+        // RegExp
         this._subscrine_correct_regex = new RegExp('^jy_correct ([A-D])$');
         this._update_correct_regex = new RegExp('^jy_correct ([0-9]+) ([A-D])$');
-        this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
         this._get_currect_ranking_regex = new RegExp('^jy_ranking$');
+        this._get_currect_number_of_corrects_regex = new RegExp('^結果.*$');
+
+        // SQL Queries
+        this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
         this._get_currect_ranking_query = 
             "SELECT user_id, display_name, count(*) as cnt , rank() over ( order by count(*) desc ) " +
             "FROM answers LEFT JOIN corrects USING (stage) LEFT JOIN users ON answers.user_id = users.id " +
@@ -71,7 +75,7 @@ class QuizManager {
         throw new Error("Invalid answer string");
     }
 
-    answer(user_name, answer_string) {
+    answer(user_id, answer_string) {
         const answer = this._cleansing_answer_string(answer_string);
         return this.pool.connect().then(client => {
             //現在の設問番号を取得
@@ -82,7 +86,7 @@ class QuizManager {
                         'insert into answers (stage, user_id, answer) values($1, $2, $3) returning *',
                         [
                             res.rows[0].current_stage,
-                            user_name,
+                            user_id,
                             answer
                         ]).catch(err => {
                             //再解答の場合の処理
@@ -93,7 +97,7 @@ class QuizManager {
                                     'update answers set answer = $3 where stage = $1 and user_id = $2 returning *',
                                     [
                                         res.rows[0].current_stage,
-                                        user_name,
+                                        user_id,
                                         answer
                                     ]);
                             }
@@ -228,6 +232,40 @@ class QuizManager {
         });
     }
 
+    
+    is_get_current_number_of_corrects_command(text){
+        if ( text.match(this._get_currect_number_of_corrects_regex) ){
+            return true;
+        }
+        return false;
+    }
+    
+
+    get_current_number_of_corrects(user_id) {
+        return this.pool.connect().then(client => {
+            //現在の設問番号を取得
+            let current_stage = null;
+            let response = null ;
+            return client.query(this._get_currect_ranking_query)
+                .then(res => {
+                    current_stage = res.rows[0].current_stage;
+                    return client.query('SELECT count(*) FROM answers LEFT JOIN corrects USING (stage) WHERE answer = correct AND user_id = $1 ',
+                        [
+                            user_id
+                        ])
+                        .then(res => {
+                            response = res;
+                            return client.release();
+                        }).then(res => {
+                            return Promise.resolve("あなたの正解数は現在、" + response.rows[0].count + "問です。");
+                        }).catch(err => {
+                            client.release();
+                            console.log("get_current_stage", err);
+                            return Promise.reject(new Error("申し訳ございません、メンテナンス中です。"));
+                        });
+                });
+        });
+    }
 
 }
 

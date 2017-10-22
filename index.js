@@ -84,7 +84,7 @@ function handleEvent(event) {
         });
       });
   }else if ( quiz_manager.is_update_correct_command(event.message.text) ) {
-    // 【管理系】DBに正解を記載
+    // 【管理系】DBの正解を更新
     return quiz_manager.update_correct(event.message.text)
       .then(message => {
         return client.replyMessage(event.replyToken, {
@@ -102,6 +102,22 @@ function handleEvent(event) {
   }else if ( quiz_manager.is_get_current_ranking_command(event.message.text) ) {
     // 【管理系】現在のランキングを表示
     return quiz_manager.get_current_ranking()
+      .then(message => {
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: message
+        });
+      })
+      .catch(e => {
+        //TODO If error has occured, shoud return sorry message
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: e.message
+        });
+      });
+  }else if ( quiz_manager.is_get_current_number_of_corrects_command(event.message.text) ) {
+    // 自分の正解数を表示
+    return quiz_manager.get_current_number_of_corrects(event.source.userId)
       .then(message => {
         return client.replyMessage(event.replyToken, {
           type: 'text',

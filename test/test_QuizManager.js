@@ -9,6 +9,7 @@ let chai = require('chai'), should = chai.should();
 describe('QuizManager',function(){
     let quiz_manager = null;
     let pool = null;
+    const test_user_id = 'test_user';
     before(function(done){
         process.env.PGUSER = "postgres"
         process.env.PGHOST = "localhost"
@@ -56,7 +57,7 @@ describe('QuizManager',function(){
     });
 
     it('correctly_answer_first', function(done){
-        quiz_manager.answer("test_user", "A")
+        quiz_manager.answer(test_user_id, "A")
             .then(res => {
                 assert.equal("解答を「A」で受け付けました。", res);
                 done();
@@ -68,7 +69,7 @@ describe('QuizManager',function(){
     });
 
     it('correctly_update_answer', function(done){
-        quiz_manager.answer("test_user", "A")
+        quiz_manager.answer(test_user_id, "A")
             .then(res => {
                 assert.equal("解答を「A」で更新しました。", res);
                 done();
@@ -128,9 +129,9 @@ describe('QuizManager',function(){
     });
 
     it('correctly_subscribe_correct', function(done){
-        quiz_manager.subscribe_correct("jy_correct A")
+        quiz_manager.subscribe_correct("jy_correct D")
             .then(res => {
-                assert.equal("問題:0 の解答を、「A」で入力しました。", res);
+                assert.equal("問題:0 の解答を、「D」で入力しました。", res);
                 done();
             })
             .catch(err =>{
@@ -206,4 +207,24 @@ describe('QuizManager',function(){
             });
     });
 
+    it('valid_get_current_number_of_corrects_comand', function(){
+        assert(quiz_manager.is_get_current_number_of_corrects_command("結果は？"));
+    });
+
+    it('valid_get_current_number_of_corrects_comand_2', function(){
+        assert(quiz_manager.is_get_current_number_of_corrects_command("結果"));
+    });
+
+
+    it('get current_number_of_my_corrects', function (done) {
+        quiz_manager.get_current_number_of_corrects(test_user_id)
+            .then(res => {
+                chai.assert.typeOf(res, 'string');
+                assert.equal("あなたの正解数は現在、1問です。", res);
+                done();
+            }).catch(err => {
+                done(err);
+            });
+    });
+ 
 });
