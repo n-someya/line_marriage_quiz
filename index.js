@@ -47,6 +47,8 @@ app.get('/ranking', (req, res) => {
   const quiz_manager = new QuizManager(pool, client);
   quiz_manager.get_current_ranking()
   .then(result => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.send(result);
   }).catch(err => {
     res.send(err);
