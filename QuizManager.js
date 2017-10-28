@@ -5,8 +5,8 @@ class QuizManager {
     constructor(pool, line_client) {
         this.pool = pool;
         // RegExp
-        this._subscrine_correct_regex = new RegExp('^jy_correct ([A-D])$');
-        this._update_correct_regex = new RegExp('^jy_correct ([0-9]+) ([A-D])$');
+        this._subscrine_correct_regex = new RegExp('^jy_correct ([1-4])$');
+        this._update_correct_regex = new RegExp('^jy_correct ([0-9]+) ([1-4])$');
         this._get_currect_ranking_regex = new RegExp('^jy_ranking$');
         this._get_currect_number_of_corrects_regex = new RegExp('^結果.*$');
 
@@ -15,7 +15,7 @@ class QuizManager {
         this._get_currect_ranking_query = 
             "SELECT rank() over ( order by count(*) desc ), display_name, count(*) as cnt " +
             "FROM answers LEFT JOIN corrects USING (stage) LEFT JOIN users ON answers.user_id = users.id " +
-            "WHERE answer = correct AND stage != 0 " +
+            "WHERE answer = correct AND stage != 0 " + //stage=0は第０問なので結果集計から排除
             "GROUP BY user_id, display_name " +
             "ORDER BY cnt desc;";
         
@@ -26,19 +26,14 @@ class QuizManager {
     get_answer_distribution(question_number) {
         return this.pool.connect().then(client => {
             // 指定された問題の回答分布を取得
-            return client.query('select answer, count(*) from answers where stage = $1 group by answer',
+            return client.query('select answer, count(*) from answers where stage = $1 group by answer order by answer',
                 [question_number]
             ).then(res => {
                 client.release();
-                const answer_distribution = res.rows.reduce((obj, row) => {
-                    obj[row.answer] = row.count;
-                    return obj;
-                }, {
-                        'A': '0',
-                        'B': '0',
-                        'C': '0',
-                        'D': '0'
-                    })
+                let answer_distribution = [0,0,0,0];
+                for( let i=0 ; i<res.rows.length; i++) {
+                    answer_distribution[parseInt(res.rows[i].answer) - 1] = res.rows[i].count;
+                }                
                 return Promise.resolve(answer_distribution);
             }).catch(err => {
                 client.release();
@@ -49,8 +44,8 @@ class QuizManager {
     }
 
     is_answer(text){
-        // 半角大文字小文字、全角大文字小文字(\uff21が全角A)のa-dを許可
-        let re = new RegExp('^[a-d|A-D|\uff21-\uff24|\uff41-\uff44]$');
+        // 半角、全角(\uff11が全角１)の1-4を許可
+        let re = new RegExp('^[1-4|\uff11-\uff14]$');
         if ( text.match(re) ){
             return true;
         }
@@ -58,21 +53,21 @@ class QuizManager {
     }
 
     _cleansing_answer_string(answer){
-        let re_A = new RegExp('^[a|A|\uff21|\uff41]$');
-        let re_B = new RegExp('^[b|B|\uff22|\uff42]$');
-        let re_C = new RegExp('^[c|C|\uff23|\uff43]$');
-        let re_D = new RegExp('^[d|D|\uff24|\uff44]$');
-        if ( answer.match(re_A) ){
-            return "A";
+        let re_1 = new RegExp('^[1|\uff11]$');
+        let re_2 = new RegExp('^[2|\uff12]$');
+        let re_3 = new RegExp('^[3|\uff13]$');
+        let re_4 = new RegExp('^[4|\uff14]$');
+        if ( answer.match(re_1) ){
+            return "1";
         }
-        else if ( answer.match(re_B) ){
-            return "B";
+        else if ( answer.match(re_2) ){
+            return "2";
         }
-        else if ( answer.match(re_C) ){
-            return "C";
+        else if ( answer.match(re_3) ){
+            return "3";
         }
-        else if ( answer.match(re_D) ){
-            return "D";
+        else if ( answer.match(re_4) ){
+            return "4";
         }
         throw new Error("Invalid answer string");
     }
@@ -268,7 +263,7 @@ class QuizManager {
             let response = null;
             return client.query(this._get_currect_ranking_query)
                 .then(res => {
-                    current_stage = res.rows[0].current_stage;
+                    current_stage = res.rows[0].current_stage;//stage=0は第０問なので結果集計から排除
                     return client.query('SELECT count(*) FROM answers LEFT JOIN corrects USING (stage) WHERE answer = correct AND user_id = $1 AND stage != 0',
                         [
                             user_id

@@ -68,9 +68,9 @@ describe('QuizManager',function(){
     });
 
     it('correctly_answer_first', function(done){
-        quiz_manager.answer(test_user_id, "A")
+        quiz_manager.answer(test_user_id, "1")
             .then(res => {
-                assert.equal("解答を「A」で受け付けました。", res);
+                assert.equal("解答を「1」で受け付けました。", res);
                 done();
             })
             .catch(err =>{
@@ -80,9 +80,9 @@ describe('QuizManager',function(){
     });
 
     it('correctly_update_answer', function(done){
-        quiz_manager.answer(test_user_id, "A")
+        quiz_manager.answer(test_user_id, "1")
             .then(res => {
-                assert.equal("解答を「A」で更新しました。", res);
+                assert.equal("解答を「1」で更新しました。", res);
                 done();
             })
             .catch(err =>{
@@ -91,48 +91,31 @@ describe('QuizManager',function(){
             });
     });
 
-    it('a_is_answer', function(){
-        assert(quiz_manager.is_answer("a"));
+    it('1_is_answer', function(){
+        assert(quiz_manager.is_answer("1"));
     });
 
-
-    it('A_is_answer', function(){
-        assert(quiz_manager.is_answer("A"));
+    it("１_is_answer", function(){
+        assert(quiz_manager.is_answer("１"));
     });
 
-    it("Ａ_is_answer", function(){
-        assert(quiz_manager.is_answer("Ａ"));
+    it('4_is_answer', function(){
+        assert(quiz_manager.is_answer("4"));
+    });
+    it('４_is_answer', function(){
+        assert(quiz_manager.is_answer("４"));
     });
 
-    it("ａ_is_answer", function(){
-        assert(quiz_manager.is_answer("ａ"));
-    });
-    
-    it('d_is_answer', function(){
-        assert(quiz_manager.is_answer("d"));
-    });
-    it('D_is_answer', function(){
-        assert(quiz_manager.is_answer("D"));
-    });
-
-    it("Ｄ_is_answer", function(){
-        assert(quiz_manager.is_answer("Ｄ"));
-    });
-
-    it("ｄ_is_answer", function(){
-        assert(quiz_manager.is_answer("ｄ"));
-    });
-
-    it('aa_is_not_answer', function(){
-        assert.equal(quiz_manager.is_answer("aa"), false);
+    it('11_is_not_answer', function(){
+        assert.equal(quiz_manager.is_answer("11"), false);
     });
 
     it('valid_subscribe_command_1', function(){
-        assert(quiz_manager.is_subscribe_correct_command("jy_correct A"));
+        assert(quiz_manager.is_subscribe_correct_command("jy_correct 1"));
     });
  
     it('valid_subscribe_command_2', function(){
-        assert(quiz_manager.is_subscribe_correct_command("jy_correct D"));
+        assert(quiz_manager.is_subscribe_correct_command("jy_correct 2"));
     });
 
     it('invalid_subscribe_command_1', function(){
@@ -140,9 +123,9 @@ describe('QuizManager',function(){
     });
 
     it('correctly_subscribe_correct', function(done){
-        quiz_manager.subscribe_correct("jy_correct D")
+        quiz_manager.subscribe_correct("jy_correct 4")
             .then(res => {
-                assert.equal("問題:0 の解答を、「D」で入力しました。", res);
+                assert.equal("問題:0 の解答を、「4」で入力しました。", res);
                 done();
             })
             .catch(err =>{
@@ -151,9 +134,9 @@ describe('QuizManager',function(){
     });
 
     it('correctly_answer_1st_question', function(done){
-        quiz_manager.answer(test_user_id, "D")
+        quiz_manager.answer(test_user_id, "4")
             .then(res => {
-                assert.equal("解答を「D」で受け付けました。", res);
+                assert.equal("解答を「4」で受け付けました。", res);
                 done();
             })
             .catch(err =>{
@@ -164,9 +147,9 @@ describe('QuizManager',function(){
 
 
     it('correctly_subscribe_correct_1', function(done){
-        quiz_manager.subscribe_correct("jy_correct D")
+        quiz_manager.subscribe_correct("jy_correct 4")
             .then(res => {
-                assert.equal("問題:1 の解答を、「D」で入力しました。", res);
+                assert.equal("問題:1 の解答を、「4」で入力しました。", res);
                 done();
             })
             .catch(err =>{
@@ -183,9 +166,9 @@ describe('QuizManager',function(){
     });
 
     it('correctly_update_correct', function(done){
-        quiz_manager.update_correct("jy_correct 0 A")
+        quiz_manager.update_correct("jy_correct 0 1")
             .then(res => {
-                assert.equal("問題:0 の解答を、「A」で更新しました。", res);
+                assert.equal("問題:0 の解答を、「1」で更新しました。", res);
                 done();
             })
             .catch(err =>{
@@ -208,12 +191,12 @@ describe('QuizManager',function(){
         let client = new Client();
         client.connect()
         .then(res => {
-            return client.query("insert into answers (stage, user_id, answer) values (2, 'user1', 'A'), (2, 'user2', 'A'), (2, 'user3', 'B'), (3, 'user4', 'D')");
+            return client.query("insert into answers (stage, user_id, answer) values (2, 'user1', '1'), (2, 'user2', '1'), (2, 'user3', '2'), (3, 'user4', '4')");
         }).then(res => {
             client.end();
             return quiz_manager.get_answer_distribution(2);
         }).then(res => {
-            const correct_obj = { A: '2', B: '1', C: '0', D: '0' };
+            const correct_obj = [2,1,0,0];
             assert.deepEqual(correct_obj, res);
             done();
         }).catch(err => {
