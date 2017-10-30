@@ -171,7 +171,7 @@ function handleEvent(event) {
         }
     }else if (event.message.type == 'sticker'){
         return client.replyMessage(event.replyToken, {
-            type: 'sitcker',
+            type: 'sticker',
             packageId: '3',
             stickerId: '196'
         });
