@@ -153,48 +153,53 @@ function handleEvent(event) {
                     text: e.message
                 });
             });
-        }else {
-            quiz_manager.get_current_stage()
+        } else {
+            return quiz_manager.get_current_stage()
                 .then(message => {
                     return client.replyMessage(event.replyToken, {
-                        type: 'template',
-                        altText: message,
-                        template: {
-                            type: "buttons",
-                            title: "解答入力",
-                            text: message + "問題に解答する",
-                            actions: [
-                                {
-                                  type: "message",
-                                  label: "1",
-                                  text: "1"
-                                },
-                                {
-                                  type: "message",
-                                  label: "2",
-                                  text: "2"
-                                },
-                                {
-                                  type: "message",
-                                  label: "3",
-                                  text: "3"
-                                },
-                                {
-                                  type: "message",
-                                  label: "4",
-                                  text: "4"
-                                }
-                            ]
-                        }
-                    });
+                        type: 'text',
+                        text: message
+                    }).then(() => {
+                        return client.replyMessage(event.replyToken, {
+                            type: 'template',
+                            altText: message,
+                            template: {
+                                type: "buttons",
+                                title: "解答入力",
+                                text: "問題に解答する",
+                                actions: [
+                                    {
+                                        type: "message",
+                                        label: "1",
+                                        text: "1"
+                                    },
+                                    {
+                                        type: "message",
+                                        label: "2",
+                                        text: "2"
+                                    },
+                                    {
+                                        type: "message",
+                                        label: "3",
+                                        text: "3"
+                                    },
+                                    {
+                                        type: "message",
+                                        label: "4",
+                                        text: "4"
+                                    }
+                                ]
+                            }
+                        });
+                    })
                 })
-            .catch(e => {
-                //TODO If error has occured, shoud return sorry message
-                return client.replyMessage(event.replyToken, {
-                    type: 'text',
-                    text: e.message
+                .catch(e => {
+                    //TODO If error has occured, shoud return sorry message
+                    return client.replyMessage(event.replyToken, {
+                        type: 'text',
+                        text: e.message
+                    });
                 });
-            });
         }
     }else if (event.message.type == 'sticker'){
         return client.replyMessage(event.replyToken, {
