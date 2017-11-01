@@ -157,8 +157,35 @@ function handleEvent(event) {
             quiz_manager.get_current_stage()
                 .then(message => {
                     return client.replyMessage(event.replyToken, {
-                        type: 'text',
-                        text: message
+                        type: 'template',
+                        altText: message,
+                        template: {
+                            type: "buttons",
+                            title: "解答入力",
+                            text: message + "¥n問題に解答する",
+                            actions: [
+                                {
+                                  type: "message",
+                                  label: "1",
+                                  text: "1"
+                                },
+                                {
+                                  type: "message",
+                                  label: "2",
+                                  text: "2"
+                                },
+                                {
+                                  type: "message",
+                                  label: "3",
+                                  text: "3"
+                                },
+                                {
+                                  type: "message",
+                                  label: "4",
+                                  text: "4"
+                                }
+                            ]
+                        }
                     });
                 })
             .catch(e => {
