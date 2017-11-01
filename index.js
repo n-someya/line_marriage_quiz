@@ -162,7 +162,7 @@ function handleEvent(event) {
                         template: {
                             type: "buttons",
                             title: "解答入力",
-                            text: message + "¥n問題に解答する",
+                            text: message + "問題に解答する",
                             actions: [
                                 {
                                   type: "message",

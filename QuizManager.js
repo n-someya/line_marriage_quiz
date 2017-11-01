@@ -144,7 +144,7 @@ class QuizManager {
                     response = res;
                     return client.release();
                 }).then(res => {
-                    return Promise.resolve("現在は、問題: " + response.rows[0].current_stage + " の解答時間です。");
+                    return Promise.resolve("現在は、問題 " + response.rows[0].current_stage + " の解答時間です。");
                 }).catch(err => {
                     client.release();
                     console.log("get_current_stage", err);
@@ -180,7 +180,7 @@ class QuizManager {
                         ])
                 }).then(res => {
                     client.release();
-                    return Promise.resolve("問題:" + current_stage + " の解答を、「" + correct + "」で入力しました。");
+                    return Promise.resolve("問題 " + current_stage + " の解答を、「" + correct + "」で入力しました。");
                 }).catch(err => {
                     client.release();
                     return Promise.reject(new Error("正解入力失敗"));
@@ -212,7 +212,7 @@ class QuizManager {
                 ])
                 .then(res => {
                     client.release();
-                    return Promise.resolve("問題:" + current_stage + " の解答を、「" + correct + "」で更新しました。");
+                    return Promise.resolve("問題 " + current_stage + " の解答を、「" + correct + "」で更新しました。");
                 }).catch(err => {
                     client.release();
                     return Promise.reject(new Error("正解更新失敗"));

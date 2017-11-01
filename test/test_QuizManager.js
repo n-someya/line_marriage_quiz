@@ -60,7 +60,7 @@ describe('QuizManager',function(){
     it('current_stage_test', function(done){
         quiz_manager.get_current_stage()
             .then(res => {
-                assert.equal("現在は、問題: 0 の解答時間です。", res);
+                assert.equal("現在は、問題 0 の解答時間です。", res);
                 done();
             }).catch(err => {
                 done(err);
@@ -125,7 +125,7 @@ describe('QuizManager',function(){
     it('correctly_subscribe_correct', function(done){
         quiz_manager.subscribe_correct("jy_correct 4")
             .then(res => {
-                assert.equal("問題:0 の解答を、「4」で入力しました。", res);
+                assert.equal("問題 0 の解答を、「4」で入力しました。", res);
                 done();
             })
             .catch(err =>{
@@ -149,7 +149,7 @@ describe('QuizManager',function(){
     it('correctly_subscribe_correct_1', function(done){
         quiz_manager.subscribe_correct("jy_correct 4")
             .then(res => {
-                assert.equal("問題:1 の解答を、「4」で入力しました。", res);
+                assert.equal("問題 1 の解答を、「4」で入力しました。", res);
                 done();
             })
             .catch(err =>{
@@ -168,7 +168,7 @@ describe('QuizManager',function(){
     it('correctly_update_correct', function(done){
         quiz_manager.update_correct("jy_correct 0 1")
             .then(res => {
-                assert.equal("問題:0 の解答を、「1」で更新しました。", res);
+                assert.equal("問題 0 の解答を、「1」で更新しました。", res);
                 done();
             })
             .catch(err =>{
@@ -180,7 +180,7 @@ describe('QuizManager',function(){
     it('increment current_stage', function(done){
         quiz_manager.get_current_stage()
             .then(res => {
-                assert.equal("現在は、問題: 2 の解答時間です。", res);
+                assert.equal("現在は、問題 2 の解答時間です。", res);
                 done();
             }).catch(err => {
                 done(err);
