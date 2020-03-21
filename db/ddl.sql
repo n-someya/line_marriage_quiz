@@ -3,6 +3,7 @@ CREATE TABLE answers (
     stage integer,
     user_id text,
     answer character(1),
+    answer_time timestamp default current_timestamp,
     UNIQUE(stage, user_id)
 );
 

@@ -13,12 +13,10 @@ class QuizManager {
         // SQL Queries
         this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
         this._get_currect_ranking_query = 
-            "SELECT rank() over ( order by count(*) desc ), display_name, count(*) as cnt " +
+            "SELECT rank() over ( order by count(*) desc, sum(EXTRACT(EPOCH FROM answer_time)) asc ), user_id, count(*) as cnt , sum(EXTRACT(EPOCH FROM answer_time)) as anstime " +
             "FROM answers LEFT JOIN corrects USING (stage) LEFT JOIN users ON answers.user_id = users.id " +
-            "WHERE answer = correct AND stage != 0 " + //stage=0は第０問なので結果集計から排除
-            "GROUP BY user_id, display_name " +
-            "ORDER BY cnt desc;";
-        
+            "WHERE answer = correct AND stage != 0 GROUP BY user_id, display_name ORDER BY cnt desc, anstime asc;";
+        // stage=0は第０問なので結果集計から排除
         // Set getProfile function
         this.lineclient = line_client;
     }
@@ -109,7 +107,7 @@ class QuizManager {
                         //その場合は解答をアップデート
                         if (err.code == 23505) {
                             return client.query(
-                                'update answers set answer = $3 where stage = $1 and user_id = $2 returning *',
+                                'update answers set answer = $3, answer_time = current_timestamp where stage = $1 and user_id = $2 returning *',
                                 [
                                     res.rows[0].current_stage,
                                     user_id,
