@@ -13,7 +13,7 @@ class QuizManager {
         // SQL Queries
         this._get_currect_stage_query = 'select coalesce((select max(stage) + 1 from corrects), 0) as current_stage;';
         this._get_currect_ranking_query = 
-            "SELECT rank() over ( order by count(*) desc, sum(EXTRACT(EPOCH FROM answer_time)) asc ), user_id, count(*) as cnt , sum(EXTRACT(EPOCH FROM answer_time)) as anstime " +
+            "SELECT rank() over ( order by count(*) desc, sum(EXTRACT(EPOCH FROM answer_time)) asc ), display_name, count(*) as cnt , sum(EXTRACT(EPOCH FROM answer_time)) as anstime " +
             "FROM answers LEFT JOIN corrects USING (stage) LEFT JOIN users ON answers.user_id = users.id " +
             "WHERE answer = correct AND stage != 0 GROUP BY user_id, display_name ORDER BY cnt desc, anstime asc;";
         // stage=0は第０問なので結果集計から排除
